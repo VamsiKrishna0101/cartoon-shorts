@@ -19,7 +19,7 @@ await page.goto(`http://127.0.0.1:${port}/index.html?story=${story}`);
 await page.waitForFunction("window.ready === true", null, { timeout: 120000 });
 const total = await page.evaluate("window.FRAMES");
 let frames = [];
-for (const part of spec.split(",")) { if (part.includes("-")) { let [a, b] = part.split("-").map(Number); if (isNaN(b)) b = total - 1; for (let f = a; f <= b; f++) frames.push(f); } else frames.push(Number(part)); }
+for (const part of spec.split(",")) { if (part.includes("-")) { let [a, b] = part.split("-"); a = Number(a); b = b === "" ? total - 1 : Number(b); for (let f = a; f <= b; f++) frames.push(f); } else frames.push(Number(part)); }
 const t0 = Date.now(); let n = 0;
 for (const f of frames) {
   const file = path.join(outDir, `f${String(f).padStart(4, "0")}.jpg`);

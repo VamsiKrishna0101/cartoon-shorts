@@ -185,7 +185,7 @@ export default {
       if (shot === 12) {
         const pk = E.back(E.prog(f, T(13), T(13) + 10), 1.8);
         calf({ x: GX + E.lerp(2.6, 1.0, pk), z: GZ + 0.5, k: 0.5, expr: f > END - 20 ? "happy" : "smug" });
-        if (f > END - 26) E.card({ id: "moo", key: "moo" + Math.min(10, f - (END - 26)), res: 0.5, x: GX + 1.6, y: 1.35, z: GZ + 0.4, s: 0.55, blob: 0,
+        if (f > END - 26) E.card({ id: "moo", key: "moo" + Math.min(10, f - (END - 26)), res: 0.5, x: GX + 0.85, y: 0.55, z: GZ + 0.9, s: 0.5, blob: 0,
           draw: (p, g) => mooBubble(g, E.back(Math.min(1, (f - (END - 26)) / 8))) });
       }
     }
