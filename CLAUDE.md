@@ -32,13 +32,15 @@ Read README.md for the tools. `web/stories/milo/` is the reference story: copy i
    Look at the sheet. Fix: characters cut by the frame edge (vertical frame is narrow: ±0.8 m at 4 m), props covering faces,
    camera inside walls/hills, anything unreadable. Re-check.
 7. Audio: `python3 audio.py web/stories/<slug> out/<slug>/audio`, then mix.py (confirm music -6.0 dB, sfx ≤ -6 dB).
-8. Render: `node render.mjs <slug> out/<slug>/frames "0-"` in the background (~2 s/frame), then
-   `bash finish.sh out/<slug>/frames out/<slug>/mix.wav out/<slug>/<slug>.mp4`. QA must show no freezes ≥0.4 s, no black frames.
+8. Captions (always on): `python3 captions.py web/stories/<slug>/phrases.json out/<slug>/captions.ass`
+   (1-3 words at a time, white + black outline, spoken word in yellow).
+   Render: `node render.mjs <slug> out/<slug>/frames "0-"` in the background (~1-2 s/frame), then
+   `bash finish.sh out/<slug>/frames out/<slug>/mix.wav out/<slug>/<slug>.mp4 out/<slug>/captions.ass`. QA must show no freezes ≥0.4 s, no black frames.
 9. Deliver: SendUserFile the MP4 (status proactive) with a ready-to-paste caption (1-2 short lines + 4-6 hashtags) for the channel.
    Also save it to the user's computer at projects\cartoon-shorts\videos\<date>_<slug>.mp4 if the folder is connected.
 10. Commit the story code (not voice/mp3/mp4: they are gitignored) and push to main. Append the topic to stories.md.
 
 ## Look rules (keep)
 - Characters never freeze: blinks, idle, walk cycles. Every camera hold creeps. Hard cut only on place/time jumps (+ white flash).
-- No captions/subtitles burned in. Only diegetic text (MOO bubble, signs).
+- Captions are burned in by captions.py (Vamsi wants them). Other on-screen text only when diegetic (MOO bubble, signs).
 - Never a real living person as a character, no brand logos, nothing graphic or political.
