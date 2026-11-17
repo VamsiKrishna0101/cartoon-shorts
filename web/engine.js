@@ -222,7 +222,11 @@ export const card = (a) => {
   c.mesh.visible = true;
   c.mesh.position.set(a.x, a.y ?? 0, a.z);
   c.mesh.scale.set((a.flip ? -1 : 1) * s, s, s);
-  c.faceCam = a.yaw == null; c.lean = a.lean ?? 0;
+  c.faceCam = a.yaw == null;
+  const ph = (a.id.length * 1.7 + a.id.charCodeAt(0)) % 6.28, tt = frameNow / FPS;
+  const idle = a.idle === false ? 0 : 1;
+  c.lean = (a.lean ?? 0) + idle * 0.012 * Math.sin(tt * 1.9 + ph);
+  c.mesh.scale.y *= 1 + idle * 0.012 * Math.sin(tt * 2.6 + ph * 1.3);
   c.mesh.rotation.set(0, a.yaw ?? 0, c.lean);
   c.mat.color.copy(cardTint).multiplyScalar(a.bright ?? 1);
   const br = a.blob ?? 0.55 * s;
@@ -315,17 +319,18 @@ export const camFromKeys = (keys, f, opts = {}) => {
   const creep = opts.creep ?? 0.0022;
   let i = 0; while (i < keys.length - 1 && keys[i + 1].f <= f) i++;
   const A = keys[i], B = keys[i + 1];
-  let pos = V(...A.pos), look = V(...A.look), fov = A.fov ?? 40, roll = A.roll ?? 0, since = f - A.f;
+  let pos = V(...A.pos), look = V(...A.look), fov = A.fov ?? 40, roll = A.roll ?? 0, e = 0, holdA = f - A.f, holdB = 0;
   if (B && !B.cut && B.f > A.f) {
     const start = B.from ?? A.f; // glide starts at B.from (default immediately)
     const raw = prog(f, start, B.f);
-    const e = B.ease === "out" ? easeOut(raw) : B.ease === "in" ? easeIn(raw) : B.ease === "lin" ? raw : smooth(raw);
-    pos.lerp(V(...B.pos), e); look.lerp(V(...B.look), e); fov = lerp(fov, B.fov ?? 40, e); roll = lerp(roll, B.roll ?? 0, e);
-    since = Math.max(0, f - B.f);
-    if (raw >= 1) since = f - B.f; else since = 0;
+    e = B.ease === "out" ? easeOut(raw) : B.ease === "in" ? easeIn(raw) : B.ease === "lin" ? raw : smooth(raw);
+    holdA = Math.min(f, start) - A.f;
+    const bpos = V(...B.pos), blook = V(...B.look);
+    pos.lerp(bpos, e); look.lerp(blook, e); fov = lerp(fov, B.fov ?? 40, e); roll = lerp(roll, B.roll ?? 0, e);
   }
-  // creep toward the look point while holding
-  const d = look.clone().sub(pos); pos.addScaledVector(d, Math.min(0.12, creep * Math.max(0, since)));
+  // every hold creeps toward the look point; the creep fades out smoothly as a glide takes over (no pops)
+  const d = look.clone().sub(pos);
+  pos.addScaledVector(d, Math.min(0.12, creep * Math.max(0, holdA)) * (1 - e));
   // kicks: [{f, amp}] flip-sign shake decaying over 7 frames
   let kx = 0, ky = 0;
   for (const k of opts.kicks ?? []) { const t = f - k.f; if (t >= 0 && t < 8) { const a = k.amp * (1 - t / 8) * (t % 2 ? -1 : 1); kx += a; ky += a * 0.6; } }
@@ -340,7 +345,9 @@ export const setCam = ({ pos, look, fov, roll, kx = 0, ky = 0 }) => {
 
 // ---------------------------------------------------------------- frame render
 export const post = postU;
-export const beginFrame = () => {
+let frameNow = 0;
+export const beginFrame = (f = 0) => {
+  frameNow = f;
   usedCards = new Set();
   postU.flash.value = 0; postU.fade.value = 0; postU.dof.value = 0; postU.gain.value = 1;
 };

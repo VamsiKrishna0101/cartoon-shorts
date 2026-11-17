@@ -3,7 +3,7 @@
 # One linear gain to about -14 LUFS (+ -1 dBFS limiter), H.264 CRF 18, AAC 192k, plus freeze/black QA.
 set -e
 FR="$1"; MIX="$2"; OUT="$3"
-J=$(ffmpeg -v error -i "$MIX" -af loudnorm=I=-14:TP=-1:LRA=11:print_format=json -f null - 2>&1 | sed -n '/{/,/}/p')
+J=$(ffmpeg -hide_banner -nostats -i "$MIX" -af loudnorm=I=-14:TP=-1:LRA=11:print_format=json -f null - 2>&1 | sed -n '/^{/,/^}/p')
 MI=$(echo "$J" | python3 -c "import json,sys;d=json.load(sys.stdin);print(d['input_i'])")
 GAIN=$(python3 -c "print(round(-14-($MI),2))")
 echo "measured $MI LUFS -> gain $GAIN dB"
