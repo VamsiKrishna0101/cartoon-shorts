@@ -86,6 +86,7 @@ export default {
       light = "day"; focus = E.V(0, 0, -2);
       cam = E.camFromKeys([
         { f: T(1), pos: [0, 9, 14], look: [0, 2, -4], fov: 46 },
+        { f: T(2) - 4, pos: [0.8, 7.2, 11.5], look: [0, 1.8, -4.2], fov: 45, ease: "lin" },
         { f: T(2) + 20, from: T(2) - 4, pos: [1.0, 1.7, 0.2], look: [-0.6, 1.1, -5.3], fov: 40 },
         { f: T(2) + 72, from: T(2) + 46, pos: [3.6, 1.75, 2.4], look: [2.3, 1.45, -1.8], fov: 40, ease: "out" },
       ], f);
