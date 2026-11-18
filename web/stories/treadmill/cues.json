@@ -1,0 +1,30 @@
+{
+  "tail": 0.8,
+  "music": {"bpm": 120, "root": -7, "mode": "major", "stop": [12, -0.05], "resume": [13, 0.0], "drone_after": true},
+  "sfx": [
+    {"at": [0, 0.05], "type": "ting", "gain": 0.6},
+    {"at": [0, 1.4], "type": "clank", "gain": 0.5},
+    {"at": [1, -0.05], "type": "flash", "gain": 1.0},
+    {"at": [1, 0.1], "type": "whoosh", "gain": 0.8},
+    {"at": [2, 2.0], "type": "boing", "gain": 0.9},
+    {"at": [3, 0.6], "type": "boing", "gain": 1.0},
+    {"at": [3, 0.65], "type": "pop", "gain": 0.7},
+    {"at": [4, 0.0], "type": "whoosh", "gain": 0.6},
+    {"at": [5, 0.0], "type": "pop", "gain": 0.8},
+    {"at": [5, 0.3], "type": "pop", "gain": 0.8},
+    {"at": [5, 0.6], "type": "pop", "gain": 0.8},
+    {"at": [6, 0.05], "type": "thunk", "gain": 0.9},
+    {"at": [7, 0.3], "type": "whoosh", "gain": 0.9},
+    {"at": [8, -0.05], "type": "whoosh", "gain": 0.7},
+    {"at": [9, -0.05], "type": "flash", "gain": 1.0},
+    {"at": [9, 0.1], "type": "whoosh", "gain": 0.6},
+    {"at": [10, 0.2], "type": "pop", "gain": 0.8},
+    {"at": [11, -0.05], "type": "flash", "gain": 1.0},
+    {"at": [11, 0.75], "type": "clank", "gain": 0.8},
+    {"at": [11, 1.0], "type": "boing", "gain": 0.7},
+    {"at": [12, 0.0], "type": "sting", "gain": 1.0},
+    {"at": [13, 0.73], "type": "ting", "gain": 0.8},
+    {"at": [13, 0.85], "type": "ting", "gain": 0.6},
+    {"at": [13, 0.73], "type": "clank", "gain": 0.6}
+  ]
+}

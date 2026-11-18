@@ -149,3 +149,91 @@ export const clouds = (E, n = 7, seed = 3) => {
   for (let i = 0; i < n; i++) { const a = r() * Math.PI * 2, d = 180 + r() * 120; out.push({ x: Math.cos(a) * d, y: 40 + r() * 50, z: Math.sin(a) * d, s: 14 + r() * 10, seed: i }); }
   return out;
 };
+
+/** old stone prison yard: flagstone floor, high walls on three sides, barred windows, iron door. Opens toward +z. */
+export const prisonYard = (E, parent, o = {}) => {
+  const g = G(parent, o.x ?? 0, 0, o.z ?? 0), W = o.w ?? 18, D = o.d ?? 14, H = o.h ?? 6;
+  const floor = ground(E, g, E.PAINT.stone(), 60, 0.4, "#b9b2a6"); floor.position.y = 0.015;
+  const wall = E.toon("#d8d0c2", E.PAINT.stone());
+  E.tbox(g, W, H, 0.6, wall, 0, 0, -D / 2);
+  for (const s of [-1, 1]) E.tbox(g, 0.6, H, D + 8, wall, s * W / 2, 0, 2);
+  const iron = E.toon("#2c2a2e");
+  for (const s of [-1, 1]) for (let k = 0; k < 2; k++) { // barred windows on the back wall
+    const x = s * (3.2 + k * 3.6);
+    E.tbox(g, 1.2, 1.3, 0.1, E.toon("#1b1d2a"), x, 3.4, -D / 2 + 0.31);
+    for (let i = 0; i < 4; i++) E.tbox(g, 0.07, 1.3, 0.08, iron, x - 0.45 + i * 0.3, 3.4, -D / 2 + 0.38);
+  }
+  E.tbox(g, 1.8, 2.6, 0.12, E.toon("#4a3a2c", E.PAINT.wood()), 0, 0, -D / 2 + 0.33); // door
+  for (let i = 0; i < 3; i++) E.tbox(g, 1.9, 0.1, 0.06, iron, 0, 0.5 + i * 0.85, -D / 2 + 0.41);
+  for (let i = 0; i < 5; i++) E.tbox(g, 2.6, 0.45, 0.6, E.toon("#8a8178", E.PAINT.stone()), -6 + i * 3, 0, -D / 2 + 1.4); // stone benches
+  return g;
+};
+
+/**
+ * 1818 penal treadwheel: a long wooden drum with step boards on the outside, turning on its axle (axis = x),
+ * a handrail beam above, and stall partitions. Returns { g, drum, R, cy, stand(theta) -> [y, z] foot point on the steps }.
+ * Rotate `drum.rotation.x` each frame; prisoners stand on the +z side near the top.
+ */
+export const treadwheel = (E, parent, o = {}) => {
+  const g = G(parent, o.x ?? 0, 0, o.z ?? 0, o.ry ?? 0), L = o.len ?? 7, R = o.r ?? 1.5, cy = o.cy ?? 1.25, n = o.steps ?? 24;
+  const wood = E.toon("#ffffff", E.PAINT.wood()), dark = E.toon("#5b3b22");
+  const drum = new THREE.Group(); drum.position.set(0, cy, 0); g.add(drum);
+  const core = E.add(drum, new THREE.CylinderGeometry(R * 0.93, R * 0.93, L, 24), E.toon("#7a5232", E.PAINT.wood())); core.rotation.z = Math.PI / 2;
+  for (const s of [-1, 1]) { const rim = E.add(drum, new THREE.CylinderGeometry(R * 1.04, R * 1.04, 0.14, 28), dark, s * L / 2, 0, 0); rim.rotation.z = Math.PI / 2; }
+  for (let i = 0; i < n; i++) { // step boards
+    const a = (i / n) * Math.PI * 2, st = new THREE.Group(); st.rotation.x = a; drum.add(st);
+    E.tbox(st, L - 0.1, 0.1, 0.32, wood, 0, R * 0.93, 0);
+  }
+  for (const s of [-1, 1]) { // A-frame supports + axle
+    E.tbox(g, 0.3, cy + 0.25, 0.3, dark, s * (L / 2 + 0.35), 0, 0);
+    E.tbox(g, 0.25, 0.2, 2.6, dark, s * (L / 2 + 0.35), 0, 0);
+  }
+  const ax = E.add(g, new THREE.CylinderGeometry(0.12, 0.12, L + 1.0, 12), E.toon("#3a3a40"), 0, cy, 0); ax.rotation.z = Math.PI / 2;
+  // handrail the prisoners hold, partitions between stalls
+  const railZ = R * 0.15, railY = cy + R + 1.0;
+  E.tbox(g, L + 1, 0.12, 0.12, dark, 0, railY, railZ);
+  for (const s of [-1, 1]) E.tbox(g, 0.14, railY + 0.1, 0.14, dark, s * (L / 2 + 0.5), 0, railZ);
+  const stalls = o.stalls ?? 4;
+  for (let i = 1; i < stalls; i++) E.tbox(g, 0.06, 1.3, 0.9, E.toon("#ffffff", E.PAINT.wood()), -L / 2 + (i * L) / stalls, railY - 1.3, railZ + 0.35);
+  const stand = (theta) => [cy + R * Math.cos(theta) + 0.05, R * Math.sin(theta)];
+  return { g, drum, R, cy, L, stand };
+};
+
+/** modern treadmill, belt along x, console at +x. Returns { g, deck, setIncline(deg), footY(x) } (x relative to its centre) */
+export const treadmill = (E, parent, x = 0, z = 0, o = {}) => {
+  const g = G(parent, x, 0, z, o.ry ?? 0), Lb = o.len ?? 2.1;
+  const deck = new THREE.Group(); deck.position.set(-Lb / 2, 0.12, 0); g.add(deck); // pivots at the rear roller
+  E.tbox(deck, Lb, 0.16, 0.9, E.toon("#3a3e45"), Lb / 2, 0, 0);
+  E.tbox(deck, Lb - 0.1, 0.03, 0.62, E.toon("#ffffff", E.PAINT.rubber()), Lb / 2, 0.16, 0);
+  for (const s of [-1, 1]) E.tbox(deck, Lb, 0.06, 0.12, E.toon(o.accent ?? "#e2453c"), Lb / 2, 0.16, s * 0.4);
+  const tower = new THREE.Group(); tower.position.set(Lb, 0, 0); deck.add(tower);
+  for (const s of [-1, 1]) E.tbox(tower, 0.1, 1.25, 0.08, E.toon("#8d949c"), 0, 0.1, s * 0.38);
+  E.tbox(tower, 0.32, 0.4, 0.86, E.toon("#26292d"), 0.04, 1.3, 0);
+  E.tbox(tower, 0.03, 0.26, 0.6, E.toon("#7fd6ff", null, { emissive: "#2a7aa0" }), -0.13, 1.37, 0);
+  for (const s of [-1, 1]) E.tbox(tower, 0.6, 0.05, 0.05, E.toon("#8d949c"), -0.3, 1.2, s * 0.42);
+  let inc = 0;
+  const setIncline = (deg) => { inc = THREE.MathUtils.degToRad(deg); deck.rotation.z = inc; };
+  const footY = (lx) => 0.12 + 0.19 + Math.tan(inc) * (lx + Lb / 2);
+  return { g, deck, setIncline, footY, Lb };
+};
+
+/** straight indoor staircase rising along +x: n steps of rise h, run d, width w. Returns { g, top(x) -> floor height at local x } */
+export const staircase = (E, parent, x = 0, z = 0, o = {}) => {
+  const g = G(parent, x, 0, z), n = o.n ?? 12, h = o.rise ?? 0.18, d = o.run ?? 0.3, w = o.w ?? 1.6;
+  const tread = E.toon("#ffffff", E.PAINT.wood()), side = E.toon(o.wall ?? "#e7d8bf", E.PAINT.plaster(o.wall ?? "#e7d8bf"));
+  for (let i = 0; i < n; i++) E.tbox(g, d, h * (i + 1), w, tread, i * d + d / 2, 0, 0, 0, 1);
+  E.tbox(g, n * d + 4, 4.5, 0.3, side, n * d / 2, 0, -w / 2 - 0.15);
+  const rail = E.add(g, new THREE.CylinderGeometry(0.035, 0.035, Math.hypot(n * d, n * h), 8), E.toon("#6b4429"), n * d / 2, n * h / 2 + 0.95, w / 2 - 0.1);
+  rail.rotation.z = Math.PI / 2 - Math.atan2(n * h, n * d) + Math.PI;
+  for (let i = 0; i < n; i += 3) E.tbox(g, 0.04, 0.95, 0.04, E.toon("#6b4429"), i * d + d / 2, h * (i + 1), w / 2 - 0.1);
+  const top = (lx) => Math.max(0, Math.min(n, Math.floor(lx / d) + 1)) * h * (lx >= 0 ? 1 : 0);
+  return { g, top, n, h, d };
+};
+
+/** a big lone mountain (cone + snow cap) for "as high as a mountain" */
+export const bigMountain = (E, parent, x, z, h = 60, o = {}) => {
+  const g = G(parent, x, 0, z);
+  const m = E.add(g, new THREE.ConeGeometry(h * 0.75, h, 9), E.toon(o.col ?? "#8e93b8"), 0, h / 2 - 1, 0); m.castShadow = false;
+  const cap = E.add(g, new THREE.ConeGeometry(h * 0.75 * 0.32, h * 0.32, 9), E.toon("#f4f6ff"), 0, h - h * 0.16 - 1 + 0.05, 0); cap.castShadow = false;
+  return g;
+};

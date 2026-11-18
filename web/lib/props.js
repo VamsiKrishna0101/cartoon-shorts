@@ -139,3 +139,50 @@ export const speedLines = (g, t) => {
   g.strokeStyle = "rgba(255,255,255,.85)"; g.lineCap = "round";
   for (let i = 0; i < 9; i++) { const y = 150 + i * 90, x = 80 + ((i * 97 + t * 900) % 400); g.lineWidth = 10 - (i % 3) * 2; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 140, y); g.stroke(); }
 };
+
+/** iron ball and chain lying by a foot; (fx, fy) = ankle point on the card */
+export const ballChain = (g, fx = 340, fy = 950, t = 0) => {
+  const bx = fx + 120, by = 975 - 46 + Math.abs(Math.sin(t * 6)) * 0;
+  for (let i = 0; i < 5; i++) { const k = i / 4, x = fx + (bx - fx) * k, y = fy + (by - 20 - fy) * k + Math.sin(k * Math.PI) * 18;
+    ell(g, x, y, 13, 9, null, 6, i % 2 ? 0 : 1.2); }
+  ell(g, bx, by, 46, 46, "#3a3a42", 8); ell(g, bx - 14, by - 16, 12, 9, "#6a6a78", 0);
+};
+
+/** paper grocery bag held at (x, y) = hand point; bread + greens poke out */
+export const groceryBag = (g, x, y, s = 1, seed = 0) => {
+  g.save(); g.translate(x, y + 70 * s); g.scale(s, s);
+  rr(g, -22, -150, 30, 70, 12, "#e9c27a", 6); // baguette
+  ell(g, 24, -88, 26, 30, "#6db35a", 6); ell(g, 10, -102, 18, 22, "#86c96c", 5);
+  if (seed % 2) ell(g, -30, -84, 20, 20, "#ff7a3d", 6);
+  rr(g, -58, -80, 116, 150, 10, "#d6a96e", 7);
+  g.fillStyle = "rgba(80,40,10,.18)"; g.fillRect(-50, -70, 26, 132);
+  g.restore();
+};
+
+/** cartoon flame (calorie burn), t animates the flicker, s = size */
+export const flame = (g, x, y, s = 1, t = 0) => {
+  const w = Math.sin(t * 17) * 8, h2 = Math.sin(t * 23 + 1) * 10;
+  const blob = (sc, col) => { g.beginPath(); g.moveTo(x, y - (170 + h2) * s * sc); g.bezierCurveTo(x + (70 + w) * s * sc, y - 90 * s * sc, x + 80 * s * sc, y, x, y);
+    g.bezierCurveTo(x - 80 * s * sc, y, x - (70 - w) * s * sc, y - 90 * s * sc, x, y - (170 + h2) * s * sc); g.fillStyle = col; g.fill(); g.lineWidth = sc === 1 ? 8 : 0; g.strokeStyle = INK; if (sc === 1) g.stroke(); };
+  blob(1, "#ff7a2f"); blob(0.62, "#ffd23f"); blob(0.3, "#fff6c9");
+};
+
+/** wallet spilling gold coins; t = seconds since it opened */
+export const wallet = (g, t = 0, x = 300, y = 520) => {
+  for (let i = 0; i < 14; i++) { const r1 = Math.abs(Math.sin(i * 12.9898) * 43758.5453 % 1), r2 = Math.abs(Math.sin(i * 78.233) * 12543.12 % 1);
+    const tt = Math.max(0, t - i * 0.05), px = x + (r1 - 0.5) * 380 * tt, py = y - 40 - 520 * tt + 900 * tt * tt;
+    if (tt <= 0 || py > 990) continue;
+    g.save(); g.translate(px, py); g.scale(Math.abs(Math.cos(tt * 9 + i)) * 0.8 + 0.2, 1);
+    ell(g, 0, 0, 30, 30, "#ffc93c", 6); ell(g, 0, 0, 18, 18, null, 4); g.restore(); }
+  g.save(); g.translate(x, y); g.rotate(-0.15);
+  rr(g, -95, -55, 190, 110, 18, "#7a4a2e", 8); rr(g, -95, -55, 190, 40, 14, "#94603c", 6); ell(g, 70, -18, 10, 10, "#ffd23f", 5);
+  g.restore();
+};
+
+/** wall clock face; hand angle from t (hours spin) */
+export const clock = (g, t = 0) => {
+  ell(g, 300, 500, 200, 200, "#fbf6ea", 12); ell(g, 300, 500, 14, 14, INK, 0);
+  for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; g.lineWidth = 9; g.strokeStyle = INK; g.beginPath(); g.moveTo(300 + Math.sin(a) * 160, 500 - Math.cos(a) * 160); g.lineTo(300 + Math.sin(a) * 182, 500 - Math.cos(a) * 182); g.stroke(); }
+  const hand = (a, L, w) => { g.lineWidth = w; g.strokeStyle = INK; g.beginPath(); g.moveTo(300, 500); g.lineTo(300 + Math.sin(a) * L, 500 - Math.cos(a) * L); g.stroke(); };
+  hand(t * 0.5, 100, 16); hand(t * 6, 150, 10);
+};
