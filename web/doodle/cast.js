@@ -93,8 +93,11 @@ export const lifter = (g, o) => {
   const drawArm = (sd) => {
     const [sh, e, h] = armPts(sd), pop = sd < 0 ? (o.popL ?? 0) : 0;
     const bTh = pop > 0 ? armTh * Math.max(0.18, 1 - pop * 1.6) : armTh;
-    blob(g, id + 30 + sd, sh[0], sh[1], 22 + 44 * m, 20 + 38 * m, bodyCol, lw); // deltoid
+    blob(g, id + 30 + sd, sh[0], sh[1], 22 + 40 * m, 20 + 36 * m, bodyCol, lw); // deltoid
     limb(g, id + 40 + sd, sh, e, bTh, bodyCol, lw);
+    if (m > 0.3 && pop === 0) { const mx = (sh[0] + e[0]) / 2, my = (sh[1] + e[1]) / 2, ang = Math.atan2(e[1] - sh[1], e[0] - sh[0]), nx = -Math.sin(ang), ny = Math.cos(ang), L = Math.hypot(e[0] - sh[0], e[1] - sh[1]);
+      line(g, id + 140 + sd, [[mx - Math.cos(ang) * L * 0.35 + nx * bTh * 0.15, my - Math.sin(ang) * L * 0.35 + ny * bTh * 0.15], [mx + nx * bTh * 0.35, my + ny * bTh * 0.35], [mx + Math.cos(ang) * L * 0.4 + nx * bTh * 0.1, my + Math.sin(ang) * L * 0.4 + ny * bTh * 0.1]], 4);
+      for (let q = 0; q < 2; q++) line(g, id + 150 + sd * 3 + q, [[sh[0] - sd * (8 - q * 14), sh[1] - 18 * m], [sh[0] + sd * (6 + q * 10), sh[1] + 20 * m]], 3); }
     if (pop > 0 && pop < 1) { // rubber shreds where the bicep was
       for (let i = 0; i < 5; i++) { const a = i * 1.3 + sd; line(g, id + 300 + i, [e, add(e, pol(a, 28 + 30 * pop))], 5); }
     }
@@ -106,9 +109,15 @@ export const lifter = (g, o) => {
   if (!armsFront) { drawArm(-1); drawArm(1); }
   blob(g, id + 80, 0, cy, rx, ry, bodyCol, lw);
   if (m > 0.15) {
-    for (const sd of [-1, 1]) blob(g, id + 81 + sd, sd * rx * 0.43, top + ry * 0.5, rx * 0.42, ry * 0.3, bodyCol, lw * 0.8);
-    for (let r = 0; r < 3; r++) for (const sd of [-1, 1]) blob(g, id + 90 + r * 3 + sd, sd * rx * 0.17, top + ry * (1.02 + r * 0.3), rx * 0.14, ry * 0.12, bodyCol, lw * 0.6);
-    line(g, id + 97, [P(0, top + ry * 0.2), P(0, top + ry * 1.75)], 4, "#6b6156");
+    const k = Math.min(1, m);
+    for (const sd of [-1, 1]) {
+      line(g, id + 81 + sd, [P(0, top + ry * 0.22), P(sd * rx * 0.12, top + ry * 0.75), P(sd * rx * 0.5, top + ry * 0.86), P(sd * rx * 0.86, top + ry * 0.5)], 5); // pec
+      line(g, id + 84 + sd, [P(sd * rx * 0.62, top + ry * 0.7), P(sd * rx * 0.72, top + ry * 0.62)], 3); // nipple tick
+      line(g, id + 87 + sd, [P(sd * rx * 0.55, top + ry * 1.0), P(sd * rx * 0.66, top + ry * 1.35), P(sd * rx * 0.5, top + ry * 1.75)], 4); // oblique
+      line(g, id + 94 + sd, [P(sd * 8, top - 4), P(sd * rx * 0.55, top + 8 * k), P(sd * rx * 0.85, top + 22)], 5); // trap slope
+    }
+    for (let r = 0; r < 3; r++) for (const sd of [-1, 1]) blob(g, id + 90 + r * 3 + sd, sd * rx * 0.17, top + ry * (1.08 + r * 0.25), rx * 0.13, ry * 0.1, null, 4);
+    line(g, id + 97, [P(0, top + ry * 0.85), P(0, top + ry * 1.85)], 4);
   } else {
     line(g, id + 98, [P(-8, top + 50), P(-2, top + 56)], 3, "#6b6156");
   }
@@ -156,6 +165,7 @@ export const fan = (g, x, y, o = {}) => {
   if (L.hair === "spike" || L.hair === "band") for (let k = 0; k < 5; k++) line(g, id + 12 + k, [[-r * 0.5 + k * r * 0.25, -r * 0.95], [-r * 0.55 + k * r * 0.28 + hw, -r * 1.35]], 6);
   if (L.hair === "flat") poly(g, id + 3, [[-r * 0.95, -r * 0.4], [-r * 0.6, -r * 1.02], [r * 0.7 + hw, -r * 1.0], [r * 0.95 + hw, -r * 0.45]], "#2e2a26", 5);
   face(g, id + 20, 0, 0, r * 0.95, o.expr ?? "wow", { look: o.look ?? -0.6 });
+  if (o.splat) splat(g, id + 30, 6, 4, r * 1.02 * Math.min(1, o.splat * 1.6), o.splat);
   g.restore();
 };
 
@@ -186,4 +196,26 @@ export const sparkle = (g, id, x, y, s) => poly(g, id, [[x, y - 34 * s], [x + 9 
 export const motion = (g, id, x, y, ang, n = 4, L = 120) => {
   for (let i = 0; i < n; i++) { const o = (i - (n - 1) / 2) * 34; const px = x + Math.cos(ang + Math.PI / 2) * o, py = y + Math.sin(ang + Math.PI / 2) * o;
     line(g, id + i, [[px, py], [px + Math.cos(ang) * L * (0.7 + 0.3 * ((i * 7) % 3) / 2), py + Math.sin(ang) * L * (0.7 + 0.3 * ((i * 7) % 3) / 2)]], 6); }
+};
+
+/** brown splat covering a face, with drips that run down over time (k 0..1+) */
+export const splat = (g, id, x, y, R, k = 1) => {
+  const n = 16, pts = [];
+  for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2, r = R * (i % 2 ? 0.78 : 1.0) * (1 + 0.12 * jit(id, i)); pts.push([x + Math.cos(a) * r, y + Math.sin(a) * r * 0.95]); }
+  poly(g, id, pts, "#7a4a24", 5, 0);
+  blob(g, id + 1, x - R * 0.3, y - R * 0.35, R * 0.18, R * 0.12, "#a06a3a", 0);
+  for (let d = 0; d < 3; d++) { const dx = x + (d - 1) * R * 0.5, len = R * (0.3 + 0.5 * Math.min(1, Math.max(0, k - 0.3)) * (1 + d % 2));
+    line(g, id + 5 + d, [[dx, y + R * 0.7], [dx + 2, y + R * 0.7 + len]], 12, "#7a4a24"); blob(g, id + 9 + d, dx + 2, y + R * 0.7 + len, 9, 10, "#7a4a24", 4); }
+  for (const s of [-1, 1]) { blob(g, id + 20 + s, x + s * R * 0.32, y - R * 0.08, R * 0.2, R * 0.22, PAPER, 4); blob(g, id + 22 + s, x + s * R * 0.32, y - R * 0.05, 5, 6, INK, 0); } // eyes blinking through
+};
+/** flying poop (soft-serve swirl), rotation spins */
+export const poop = (g, id, x, y, s = 1, rot = 0) => {
+  g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s);
+  blob(g, id, 0, 18, 46, 20, "#7a4a24", 5); blob(g, id + 1, 0, -2, 34, 16, "#8a5530", 5); blob(g, id + 2, 2, -18, 22, 12, "#9a6236", 5);
+  line(g, id + 3, [[2, -28], [8, -40], [0, -44]], 7, "#9a6236"); g.restore();
+};
+/** buzzing flies over the crowd */
+export const flies = (g, id, x, y, t, n = 4) => {
+  for (let i = 0; i < n; i++) { const a = t * (5 + i) + i * 2, fx = x + Math.cos(a) * (40 + i * 12), fy = y + Math.sin(a * 1.3) * (22 + i * 6);
+    blob(g, id + i, fx, fy, 6, 5, INK, 0); g.fillStyle = "rgba(255,255,255,.75)"; g.beginPath(); g.ellipse(fx - 4, fy - 6, 5, 3, -0.5, 0, 7); g.ellipse(fx + 4, fy - 6, 5, 3, 0.5, 0, 7); g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke(); }
 };

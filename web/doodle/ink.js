@@ -1,6 +1,7 @@
 // Hand-drawn "doodle" ink primitives for flat 2D shorts. Lines boil (re-jitter) every BOIL frames like hand animation.
 export const INK = "#1c1b1a", PAPER = "#fbf7ef", BG = "#a8ae98", FLOOR = "#9ba18a";
 export const BOIL = 3;
+export const STYLE = { sketch: true, hatch: true };
 let frame = 0;
 export const setFrame = (f) => { frame = f; };
 export const boilSeed = () => Math.floor(frame / BOIL);
@@ -45,7 +46,20 @@ export const blob = (g, id, cx, cy, rx, ry, fill = PAPER, lw = 7, rot = 0, wob =
   }
   trace(g, pts, true);
   if (fill) { g.fillStyle = fill; g.fill(); }
-  if (lw) { g.lineWidth = lw * (1 + 0.12 * jit(id, 99)); g.strokeStyle = INK; g.lineJoin = "round"; g.stroke(); }
+  if (fill && STYLE.hatch && Math.min(rx, ry) > 22 && fill !== INK) { // shading hatch on the lower-right crescent
+    g.save(); g.clip(); g.lineWidth = 2.2; g.strokeStyle = "rgba(28,27,26,.55)"; const R = Math.max(rx, ry);
+    for (let k = 0.32; k < 1.4; k += 0.11) { const o = k * R, dx = Math.cos(Math.PI / 4), dy = Math.sin(Math.PI / 4);
+      const bx = cx + dx * o + jit(id, 300 + k * 10) * 2, by = cy + dy * o; g.beginPath(); g.moveTo(bx - dy * R * 1.5, by + dx * R * 1.5); g.lineTo(bx + dy * R * 1.5, by - dx * R * 1.5); g.stroke(); }
+    g.restore(); trace(g, pts, true); // hatch lines replaced the current path; restore the outline path
+  }
+  if (lw) {
+    g.lineWidth = lw * (STYLE.sketch ? 0.8 : 1) * (1 + 0.12 * jit(id, 99)); g.strokeStyle = INK; g.lineJoin = "round"; g.stroke();
+    if (STYLE.sketch) { // second rough pass, slightly off
+      const q = []; for (let i = 0; i < n; i++) { const a = (i / n) * Math.PI * 2, r = 1 + (wob + 0.02) * jit(id + 0.5, i);
+        const x = Math.cos(a) * rx * r, y = Math.sin(a) * ry * r; q.push([cx + x * Math.cos(rot) - y * Math.sin(rot) + 1.5, cy + x * Math.sin(rot) + y * Math.cos(rot) - 1]); }
+      trace(g, q.slice(0, n - 2 - Math.floor(3 * (jit(id, 77) + 1))), false); g.lineWidth = lw * 0.4; g.stroke();
+    }
+  }
 };
 
 /** wobbly stroke through points (subdivided so long lines bend a little) */
@@ -57,7 +71,8 @@ export const line = (g, id, pts, lw = 7, col = INK, wob = 2.2) => {
   }
   out.push([pts[pts.length - 1][0] + wob * jit(id, 999, 1), pts[pts.length - 1][1] + wob * jit(id, 999, 2)]);
   trace(g, out, false);
-  g.lineWidth = lw; g.strokeStyle = col; g.lineCap = "round"; g.lineJoin = "round"; g.stroke();
+  g.lineWidth = lw * (STYLE.sketch && col === INK ? 0.85 : 1); g.strokeStyle = col; g.lineCap = "round"; g.lineJoin = "round"; g.stroke();
+  if (STYLE.sketch && col === INK && lw > 3.5 && out.length > 1) { trace(g, out.map((p, i) => [p[0] + 1.6 * jit(id + 0.3, i, 3) + 1, p[1] + 1.6 * jit(id + 0.3, i, 4)]), false); g.lineWidth = lw * 0.35; g.stroke(); }
 };
 
 /** filled wobbly polygon */

@@ -153,6 +153,9 @@ def sfx(kind):
         f = 210 + 90 * t / t[-1] + 30 * np.sin(2 * np.pi * 23 * t)
         x = 2 * ((np.cumsum(f) / SR) % 1) - 1
         return lp_fast(x, 1600) * env(n, 0.03, 0.25, 0.3, 0.06) * 0.6
+    if kind == "splat":  # wet slap
+        n = int(0.3 * SR); t = np.arange(n) / SR; x = rng.standard_normal(n)
+        return (lp_fast(x, 700) * 1.6 + 0.5 * np.sin(2 * np.pi * (120 + 200 * np.exp(-t * 40)) * t)) * env(n, 0.001, 0.08)
     raise ValueError(kind)
 
 def main():
