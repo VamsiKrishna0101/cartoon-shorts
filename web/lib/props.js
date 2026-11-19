@@ -186,3 +186,62 @@ export const clock = (g, t = 0) => {
   const hand = (a, L, w) => { g.lineWidth = w; g.strokeStyle = INK; g.beginPath(); g.moveTo(300, 500); g.lineTo(300 + Math.sin(a) * L, 500 - Math.cos(a) * L); g.stroke(); };
   hand(t * 0.5, 100, 16); hand(t * 6, 150, 10);
 };
+
+/** church bell, flat; o = { x, y, s, rot, tape: mouth taped shut (a "dumb" bell), col } */
+export const bell2D = (g, o = {}) => {
+  const x = o.x ?? 300, y = o.y ?? 420, s = o.s ?? 1, col = o.col ?? "#e0b04a";
+  g.save(); g.translate(x, y); g.rotate(o.rot ?? 0); g.scale(s, s);
+  rr(g, -26, -230, 52, 50, 16, shade(col, 0.8), 7); // crown loop
+  g.beginPath(); g.moveTo(-70, -190); g.bezierCurveTo(-90, -120, -95, -20, -170, 40); g.lineTo(170, 40);
+  g.bezierCurveTo(95, -20, 90, -120, 70, -190); g.quadraticCurveTo(0, -215, -70, -190); g.closePath();
+  g.fillStyle = col; g.fill(); g.lineWidth = 8; g.strokeStyle = INK; g.stroke();
+  g.fillStyle = "rgba(255,255,255,.45)"; g.beginPath(); g.ellipse(-35, -110, 14, 60, 0.15, 0, Math.PI * 2); g.fill();
+  rr(g, -175, 32, 350, 26, 12, shade(col, 0.85), 7);
+  if (o.tape) {
+    for (const [a, c] of [[0.2, "#f2e6c8"], [-0.2, "#efe0bd"]]) { g.save(); g.translate(0, 45); g.rotate(a); rr(g, -150, -18, 300, 36, 4, c, 6); g.restore(); }
+  } else ell(g, 0 + Math.sin((o.t ?? 0) * 9) * 30, 70, 28, 28, "#4a4650", 7); // clapper
+  g.restore();
+};
+
+/** loud sound rings radiating from (x, y); t = 0..1 */
+export const soundRings = (g, t, x = 300, y = 500) => {
+  for (let i = 0; i < 3; i++) {
+    const k = (t * 1.6 + i * 0.33) % 1, r = 60 + k * 230;
+    g.globalAlpha = 1 - k; g.lineWidth = 16 * (1 - k) + 4; g.strokeStyle = "#ffffff";
+    for (const side of [-1, 1]) { g.beginPath(); g.arc(x, y, r, side > 0 ? -0.7 : Math.PI - 0.7, side > 0 ? 0.7 : Math.PI + 0.7); g.stroke(); }
+  }
+  g.globalAlpha = 1;
+};
+
+/** swaddled sleeping baby, lying across (x, y), s = size; awake = eyes open */
+export const baby = (g, x = 300, y = 600, s = 1, o = {}) => {
+  g.save(); g.translate(x, y); g.scale(s, s); g.rotate(o.rot ?? 0);
+  rr(g, -150, -55, 230, 110, 55, o.blanket ?? "#9fd0ff", 8);
+  g.lineWidth = 5; g.strokeStyle = shade(o.blanket ?? "#9fd0ff", 0.75); g.beginPath(); g.moveTo(-60, -50); g.quadraticCurveTo(-30, 0, -70, 50); g.stroke();
+  ell(g, 110, -5, 72, 66, SK, 8);
+  ell(g, 90, 22, 13, 8, "#ffb0a8", 0); ell(g, 140, 22, 13, 8, "#ffb0a8", 0);
+  g.lineWidth = 6; g.strokeStyle = INK; g.lineCap = "round";
+  if (o.awake) { ell(g, 92, -8, 7, 9, INK, 0); ell(g, 132, -8, 7, 9, INK, 0); }
+  else for (const ex of [92, 132]) { g.beginPath(); g.arc(ex, -12, 11, 0.2, Math.PI - 0.2); g.stroke(); }
+  g.beginPath(); g.arc(112, 30, 7, 0, Math.PI * 2); g.stroke();
+  g.beginPath(); g.moveTo(105, -68); g.quadraticCurveTo(125, -95, 112, -110); g.stroke(); // curl
+  g.restore();
+};
+const SK = "#ffe2c2";
+
+/** floating sleep Z's above (x, y); t seconds (comic symbol, no words) */
+export const zzz = (g, t, x = 300, y = 400) => {
+  g.font = "bold 70px Arial Black, Arial, sans-serif"; g.textAlign = "center"; g.lineWidth = 10; g.strokeStyle = INK; g.fillStyle = "#ffffff";
+  for (let i = 0; i < 3; i++) { const k = (t * 0.5 + i / 3) % 1, px = x + k * 120 + Math.sin(k * 6) * 15, py = y - k * 260, sz = 0.6 + k * 0.7;
+    g.save(); g.globalAlpha = Math.min(1, (1 - k) * 2.5); g.translate(px, py); g.scale(sz, sz); g.strokeText("Z", 0, 0); g.fillText("Z", 0, 0); g.restore(); }
+  g.globalAlpha = 1;
+};
+
+/** impact burst lines + dust at floor point (x, y); t = 0..1 */
+export const impact = (g, t, x = 300, y = 900) => {
+  const k = Math.min(1, t);
+  g.lineCap = "round"; g.strokeStyle = INK;
+  for (let i = 0; i < 9; i++) { const a = Math.PI + (i / 8) * Math.PI, r0 = 60 + k * 120, r1 = r0 + 90 * (1 - k) + 20;
+    g.lineWidth = 12 * (1 - k) + 3; g.beginPath(); g.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0 * 0.7); g.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1 * 0.7); g.stroke(); }
+  for (let i = 0; i < 6; i++) ell(g, x + (i - 2.5) * 70 * (0.6 + k), y - 20 - Math.sin(i) * 15 * k, 40 * (1 - k * 0.6), 28 * (1 - k * 0.6), "rgba(230,225,215,.9)", 5);
+};
