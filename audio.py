@@ -156,6 +156,14 @@ def sfx(kind):
     if kind == "splat":  # wet slap
         n = int(0.3 * SR); t = np.arange(n) / SR; x = rng.standard_normal(n)
         return (lp_fast(x, 700) * 1.6 + 0.5 * np.sin(2 * np.pi * (120 + 200 * np.exp(-t * 40)) * t)) * env(n, 0.001, 0.08)
+    if kind == "beep":
+        n = int(0.09 * SR); t = np.arange(n) / SR
+        return np.sign(np.sin(2 * np.pi * 1320 * t)) * 0.35 * env(n, 0.002, 0.2, 1.0, 0.01)
+    if kind == "motor":  # treadmill motor whining up
+        n = int(2.6 * SR); t = np.arange(n) / SR
+        f = 60 + 520 * (t / t[-1]) ** 1.6
+        x = 2 * ((np.cumsum(f) / SR) % 1) - 1 + 0.3 * np.sin(2 * np.pi * np.cumsum(f * 2.01) / SR)
+        return lp_fast(x, 2200) * env(n, 0.2, 9, 1.0, 0.05) * 0.5
     raise ValueError(kind)
 
 def main():

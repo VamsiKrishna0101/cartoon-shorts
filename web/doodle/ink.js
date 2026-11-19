@@ -46,7 +46,7 @@ export const blob = (g, id, cx, cy, rx, ry, fill = PAPER, lw = 7, rot = 0, wob =
   }
   trace(g, pts, true);
   if (fill) { g.fillStyle = fill; g.fill(); }
-  if (fill && STYLE.hatch && Math.min(rx, ry) > 22 && fill !== INK) { // shading hatch on the lower-right crescent
+  if (fill && STYLE.hatch && Math.min(rx, ry) > 22 && fill !== INK && !fill.startsWith("rgba")) { // shading hatch on the lower-right crescent
     g.save(); g.clip(); g.lineWidth = 2.2; g.strokeStyle = "rgba(28,27,26,.55)"; const R = Math.max(rx, ry);
     for (let k = 0.32; k < 1.4; k += 0.11) { const o = k * R, dx = Math.cos(Math.PI / 4), dy = Math.sin(Math.PI / 4);
       const bx = cx + dx * o + jit(id, 300 + k * 10) * 2, by = cy + dy * o; g.beginPath(); g.moveTo(bx - dy * R * 1.5, by + dx * R * 1.5); g.lineTo(bx + dy * R * 1.5, by - dx * R * 1.5); g.stroke(); }

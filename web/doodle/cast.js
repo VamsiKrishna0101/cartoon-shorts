@@ -219,3 +219,97 @@ export const flies = (g, id, x, y, t, n = 4) => {
   for (let i = 0; i < n; i++) { const a = t * (5 + i) + i * 2, fx = x + Math.cos(a) * (40 + i * 12), fy = y + Math.sin(a * 1.3) * (22 + i * 6);
     blob(g, id + i, fx, fy, 6, 5, INK, 0); g.fillStyle = "rgba(255,255,255,.75)"; g.beginPath(); g.ellipse(fx - 4, fy - 6, 5, 3, -0.5, 0, 7); g.ellipse(fx + 4, fy - 6, 5, 3, 0.5, 0, 7); g.fill(); g.lineWidth = 2; g.strokeStyle = INK; g.stroke(); }
 };
+
+/**
+ * Side-view runner facing right (flip with sx<0). Feet baseline at (x,y).
+ * o = { phase: run cycle (cycles, any real), wheel: 0..1 legs blur into a cartoon wheel, m: buff 0..1.2, lean: rad,
+ *       expr: calm|smug|strain|shock|dizzy|laugh|blank, look: 1 = looks at camera, s, sx, sy, walk: softer stride }
+ */
+export const runner = (g, o) => {
+  const id = 500 + (o.id ?? 0) * 60, m = o.m ?? 0, s = o.s ?? 1, two = Math.PI * 2, ph = (o.phase ?? 0) * two, lw = 7;
+  g.save(); g.translate(o.x, o.y); g.scale(s * (o.sx ?? 1), s * (o.sy ?? 1));
+  const lean = o.lean ?? 0.12, hip = P(0, -205), stride = o.walk ? 0.45 : 0.75;
+  const neck = add(hip, pol(-Math.PI / 2 + lean, 150 + 20 * m));
+  const legs = (back) => {
+    for (const k of back ? [0.5] : [0]) {
+      const a = ph + k * two, th = stride * Math.sin(a), bend = 0.25 + 1.1 * Math.max(0, Math.sin(a + Math.PI / 2));
+      const knee = add(hip, pol(Math.PI / 2 - th, 102)), foot = add(knee, pol(Math.PI / 2 - th + bend, 102));
+      const lift = Math.max(0, -Math.cos(a)) * 0;
+      line(g, id + (back ? 1 : 2), [hip, knee, P(foot[0], foot[1] - lift)], back ? 6 : 7, back ? "#3c3a37" : INK);
+      blob(g, id + (back ? 3 : 4), foot[0] + 16, foot[1] + 2, 36, 17, back ? "#e8e2d6" : PAPER, lw, 0.1);
+    }
+  };
+  const W = o.wheel ?? 0;
+  if (W < 0.5) legs(true);
+  const arm = (back) => {
+    const a = ph + (back ? 0 : 0.5) * two, sw = (o.walk ? 0.5 : 0.9) * Math.sin(a);
+    const sh = add(neck, P(4, 26 + 10 * m)), el = add(sh, pol(Math.PI / 2 + sw, 80 + 22 * m)), hd = add(el, pol(Math.PI / 2 + sw - 1.5, 72 + 16 * m));
+    const th = 6 + 34 * m;
+    if (th > 9) { limb(g, id + (back ? 10 : 11), sh, el, th, back ? "#e8e2d6" : PAPER, lw); limb(g, id + (back ? 12 : 13), el, hd, th * 0.7, back ? "#e8e2d6" : PAPER, lw); }
+    else line(g, id + (back ? 10 : 11), [sh, el, hd], back ? 6 : 7, back ? "#3c3a37" : INK);
+    blob(g, id + (back ? 14 : 15), hd[0], hd[1], 12 + 12 * m, 11 + 11 * m, back ? "#e8e2d6" : PAPER, 6);
+  };
+  arm(true);
+  // torso
+  if (m > 0.1) { const c = add(hip, pol(-Math.PI / 2 + lean, 85 + 10 * m)); blob(g, id + 20, c[0] + 10 * m, c[1], 30 + 62 * m, 82 + 26 * m, PAPER, lw, lean);
+    line(g, id + 21, [add(c, P(18 + 40 * m, -30 - 10 * m)), add(c, P(30 + 55 * m, 10)), add(c, P(10 + 30 * m, 22))], 5); // pec
+    for (let r = 0; r < 3; r++) line(g, id + 22 + r, [add(c, P(18 + 34 * m, 30 + r * 22)), add(c, P(36 + 46 * m, 30 + r * 22))], 4); }
+  else { blob(g, id + 20, (hip[0] + neck[0]) / 2, (hip[1] + neck[1]) / 2 + 10, 24, 82, PAPER, lw, lean); }
+  if (W < 0.5) legs(false);
+  else { // cartoon leg wheel
+    const c = P(10, -100);
+    for (let i = 0; i < 9; i++) { const a = ph * 3 + i * 0.7; line(g, id + 30 + i, [add(c, pol(a, 30)), add(c, pol(a + 0.9, 95))], 5, i % 2 ? INK : "#5b5751", 1.5); }
+    blob(g, id + 40, c[0], c[1], 105, 105, null, 5, 0, 0.05);
+    for (let i = 0; i < 3; i++) { const a = ph * 4 + i * 2.1; blob(g, id + 41 + i, c[0] + Math.cos(a) * 100, c[1] + Math.sin(a) * 100, 30, 15, PAPER, 5, a); }
+    line(g, id + 45, [hip, c], 7);
+  }
+  arm(false);
+  // head (profile)
+  const hc = add(neck, pol(-Math.PI / 2 + lean * 1.2, 60));
+  line(g, id + 46, [neck, hc], 8);
+  blob(g, id + 47, hc[0], hc[1], 62, 64, PAPER, lw);
+  for (let i = 0; i < 4; i++) line(g, id + 48 + i, [P(hc[0] - 30 + i * 12, hc[1] - 58), P(hc[0] - 40 + i * 12 - (o.hairBack ?? 0) * 30, hc[1] - 82 - (i % 2) * 8)], 6);
+  if (o.look) face(g, id + 52, hc[0] + 4, hc[1], 60, o.expr ?? "blank", { look: 0 });
+  else { // profile face
+    const ex = hc[0] + 30, ey = hc[1] - 10, e = o.expr ?? "calm";
+    line(g, id + 53, [P(hc[0] + 58, hc[1] - 4), P(hc[0] + 74, hc[1] + 10), P(hc[0] + 60, hc[1] + 14)], 5); // nose
+    if (e === "strain") { line(g, id + 54, [P(ex - 10, ey - 8), P(ex + 8, ey), P(ex - 10, ey + 8)], 6); }
+    else if (e === "dizzy") { for (let k = 0; k < 2; k++) line(g, id + 54 + k, [P(ex - 10, ey - 10 + k * 20), P(ex + 10, ey + 10 - k * 20)], 5); }
+    else if (e === "smug" || e === "laugh") { blob(g, id + 54, ex, ey, 12, 13, PAPER, 5); blob(g, id + 55, ex + 3, ey + 3, 5, 5, INK, 0); line(g, id + 56, [P(ex - 14, ey - 6), P(ex + 14, ey - 3)], 6); }
+    else { const R = e === "shock" ? 19 : 14; blob(g, id + 54, ex, ey, R, R * 1.1, PAPER, 5); blob(g, id + 55, ex + 4, ey + 1, 5, 6, INK, 0); }
+    const my = hc[1] + 30;
+    if (e === "shock") blob(g, id + 57, hc[0] + 40, my + 4, 10, 15, "#3a1d1d", 5);
+    else if (e === "laugh") poly(g, id + 57, [[hc[0] + 18, my - 6], [hc[0] + 58, my - 10], [hc[0] + 44, my + 18]], "#c9564b", 5, 1);
+    else if (e === "strain") poly(g, id + 57, [[hc[0] + 22, my - 6], [hc[0] + 56, my - 8], [hc[0] + 54, my + 8], [hc[0] + 22, my + 8]], PAPER, 5, 1);
+    else if (e === "smug") line(g, id + 57, [P(hc[0] + 24, my), P(hc[0] + 44, my + 4), P(hc[0] + 58, my - 8)], 6);
+    else line(g, id + 57, [P(hc[0] + 28, my), P(hc[0] + 54, my)], 6);
+  }
+  g.restore();
+  return { head: [o.x + hc[0] * s, o.y + hc[1] * s] };
+};
+
+/** side-view treadmill, belt from x-210..x+170 at floor y; console at the front (right). belt = scroll offset; speed shown on screen */
+export const treadmill2D = (g, id, x, y, o = {}) => {
+  const s = o.s ?? 1; g.save(); g.translate(x, y); g.scale(s, s);
+  // console post + bars
+  line(g, id, [[150, -40], [205, -330]], 12); line(g, id + 1, [[150, -40], [205, -330]], 5, "#8d949c");
+  line(g, id + 2, [[60, -250], [200, -270]], 9);
+  poly(g, id + 3, [[170, -400], [290, -420], [300, -320], [185, -310]], "#3a3d42", 6, 1.5);
+  poly(g, id + 4, [[188, -392], [272, -405], [278, -362], [195, -352]], o.screen ?? "#9fe3b5", 4, 1);
+  g.save(); g.translate(234, -378); g.rotate(-0.13); g.font = "bold 34px Courier New, monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillStyle = INK; g.fillText(o.text ?? "3.0", 0, 0); g.restore();
+  blob(g, id + 5, 268, -338, 17 * (o.press ? 0.8 : 1), 13 * (o.press ? 0.8 : 1), "#e5484d", 5);
+  // deck + belt
+  poly(g, id + 6, [[-230, -46], [180, -46], [196, -10], [-246, -10]], "#4a4d52", 6, 1.5);
+  blob(g, id + 7, -226, -30, 20, 20, "#2d2d2f", 5); blob(g, id + 8, 176, -30, 20, 20, "#2d2d2f", 5);
+  line(g, id + 9, [[-226, -50], [176, -50]], 8);
+  g.save(); g.beginPath(); g.rect(-226, -58, 402, 14); g.clip(); g.lineWidth = 4; g.strokeStyle = "#cfd3d8";
+  const off = ((o.belt ?? 0) % 60 + 60) % 60; for (let k = -1; k < 8; k++) { const bx = 176 - k * 60 - off; g.beginPath(); g.moveTo(bx, -56); g.lineTo(bx - 18, -46); g.stroke(); } g.restore();
+  if (o.smoke) for (let i = 0; i < 3; i++) blob(g, id + 20 + i, -230 - i * 40 - ((o.t ?? 0) * 200 + i * 37) % 80, -50 - i * 30, 26 + i * 8, 20 + i * 6, "rgba(246,246,242,.9)", 3, 0, 0.12);
+  g.restore();
+};
+
+/** wall on the left edge with a light switch and a poster frame (no text) */
+export const leftWall = (g, id, x, top, bottom) => {
+  poly(g, id, [[-300, top], [x, top + 30], [x, bottom], [-300, bottom + 40]], "#c3c7b4", 6, 2);
+  poly(g, id + 1, [[x - 70, top + 220], [x - 18, top + 228], [x - 18, top + 360], [x - 70, top + 350]], "#e2d9c4", 5, 1.5);
+};
