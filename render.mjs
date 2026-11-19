@@ -15,7 +15,7 @@ const browser = await chromium.launch({ executablePath: process.env.CHROME || "/
 const page = await browser.newPage({ viewport: { width: 1080, height: 1920 } });
 page.on("console", (m) => { if (m.type() === "error" || m.type() === "warning") console.log("[page]", m.text()); });
 page.on("pageerror", (e) => console.log("[pageerror]", e.message));
-await page.goto(`http://127.0.0.1:${port}/index.html?story=${story}`);
+await page.goto(`http://127.0.0.1:${port}/${process.env.PAGE || "index.html"}?story=${story}`);
 await page.waitForFunction("window.ready === true", null, { timeout: 120000 });
 const total = await page.evaluate("window.FRAMES");
 let frames = [];

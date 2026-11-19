@@ -117,6 +117,42 @@ def sfx(kind):
     if kind == "flash":
         n = int(0.6 * SR); x = rng.standard_normal(n)
         return (x - lp_fast(x, 4000)) * env(n, 0.001, 0.25) * 0.8
+    if kind == "grunt":  # strained vocal-ish buzz
+        n = int(0.55 * SR); t = np.arange(n) / SR
+        f = 105 + 25 * np.sin(np.pi * t / t[-1]) + 4 * np.sin(2 * np.pi * 31 * t)
+        ph = 2 * np.pi * np.cumsum(f) / SR; x = sum(np.sin(h * ph) / h for h in range(1, 18))
+        x = lp_fast(x, 1100) + 0.5 * (lp_fast(x, 2600) - lp_fast(x, 1800)) + 0.15 * lp_fast(rng.standard_normal(n), 2000)
+        return x * env(n, 0.04, 0.5, 0.6, 0.12) * 1.3
+    if kind == "pump":  # air pump stroke, rising
+        n = int(0.32 * SR); t = np.arange(n) / SR; x = rng.standard_normal(n)
+        band = lp_fast(x, 2500) - lp_fast(x, 600)
+        squeak = np.sin(2 * np.pi * np.cumsum(500 + 700 * t / t[-1]) / SR) * 0.25
+        return (band + squeak) * env(n, 0.03, 0.18) * 1.6
+    if kind == "bang":  # balloon pop
+        n = int(0.5 * SR); t = np.arange(n) / SR; x = rng.standard_normal(n)
+        return (x * np.exp(-t * 45) + 0.6 * np.sin(2 * np.pi * (70 + 80 * np.exp(-t * 30)) * t) * np.exp(-t * 9)) * 1.2
+    if kind == "fart":  # long deflating pfffbbbt with sputters
+        n = int(1.7 * SR); t = np.arange(n) / SR
+        f = 150 * np.exp(-t * 0.9) + 38 + 18 * np.sin(2 * np.pi * 5.5 * t)
+        ph = 2 * np.pi * np.cumsum(f) / SR
+        x = np.sign(np.sin(ph)) * 0.6 + 0.4 * np.sin(2 * ph)
+        flutter = 0.65 + 0.35 * np.sign(np.sin(2 * np.pi * (9 + 6 * t) * t))
+        x = lp_fast(x * flutter, 900) + 0.25 * lp_fast(rng.standard_normal(n), 1500) * (1 - t / t[-1])
+        sput = np.ones(n); 
+        for a in (1.25, 1.42, 1.55): sput[int(a * SR): int((a + 0.06) * SR)] = 0.15
+        return x * env(n, 0.01, 4.0, 0.9, 0.08) * sput * 1.7
+    if kind == "squeal":  # balloon whistle zipping around
+        n = int(1.6 * SR); t = np.arange(n) / SR
+        f = 900 + 400 * np.sin(2 * np.pi * 1.3 * t) + 120 * np.sin(2 * np.pi * 11 * t) - 300 * t
+        return np.sin(2 * np.pi * np.cumsum(f) / SR) * env(n, 0.02, 3.0, 0.8, 0.2) * 0.35
+    if kind == "plop":
+        n = int(0.18 * SR); t = np.arange(n) / SR
+        return np.sin(2 * np.pi * (260 * np.exp(-t * 14) + 80) * t) * env(n, 0.002, 0.07)
+    if kind == "creak":  # rubbery muscle stretch
+        n = int(0.4 * SR); t = np.arange(n) / SR
+        f = 210 + 90 * t / t[-1] + 30 * np.sin(2 * np.pi * 23 * t)
+        x = 2 * ((np.cumsum(f) / SR) % 1) - 1
+        return lp_fast(x, 1600) * env(n, 0.03, 0.25, 0.3, 0.06) * 0.6
     raise ValueError(kind)
 
 def main():
