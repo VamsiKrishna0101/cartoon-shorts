@@ -245,3 +245,159 @@ export const impact = (g, t, x = 300, y = 900) => {
     g.lineWidth = 12 * (1 - k) + 3; g.beginPath(); g.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0 * 0.7); g.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1 * 0.7); g.stroke(); }
   for (let i = 0; i < 6; i++) ell(g, x + (i - 2.5) * 70 * (0.6 + k), y - 20 - Math.sin(i) * 15 * k, 40 * (1 - k * 0.6), 28 * (1 - k * 0.6), "rgba(230,225,215,.9)", 5);
 };
+
+// ---------------------------------------------------------------- burpee story
+/** Side-view burpee athlete (facing right). Joints per pose in design units, floor y = 975.
+ *  burpeeGuy(g, look, { a, b, u, expr, blink, t, sweat }) blends pose a -> b by u (0..1). look = same colour object as toon.js. */
+const BP = {
+  //        ankle      knee       hip        shoulder   elbow      wrist      head
+  stand:  [[ 320, 958], [ 322, 840], [ 320, 722], [ 320, 552], [ 334, 650], [ 338, 742], [ 324, 458]],
+  squat:  [[ 320, 958], [ 378, 872], [ 265, 890], [ 332, 738], [ 398, 770], [ 460, 752], [ 370, 652]],
+  hands:  [[ 320, 958], [ 385, 880], [ 295, 858], [ 400, 770], [ 406, 868], [ 410, 962], [ 466, 702]],
+  plank:  [[  42, 955], [ 132, 905], [ 222, 862], [ 400, 772], [ 402, 868], [ 406, 962], [ 486, 728]],
+  push:   [[  42, 958], [ 132, 940], [ 222, 918], [ 400, 885], [ 352, 918], [ 406, 962], [ 486, 845]],
+  jump:   [[ 320, 800], [ 320, 682], [ 320, 564], [ 320, 394], [ 378, 330], [ 430, 250], [ 324, 300]],
+  flat:   [[  30, 958], [ 125, 958], [ 222, 950], [ 392, 940], [ 460, 958], [ 526, 960], [ 482, 900]],
+};
+export const BURPEE_POSES = Object.keys(BP);
+/** where a rep cycle is: ph in 0..1 per rep. opts = { push, jump } add the push-up / jump. Returns { a, b, u } */
+export const burpeeCycle = (ph, o = {}) => {
+  const seq = ["stand", "squat", "hands", "plank"];
+  if (o.push) seq.push("push", "plank");
+  seq.push("hands", "squat");
+  if (o.jump) seq.push("jump");
+  seq.push("stand");
+  const n = seq.length - 1, x = (((ph % 1) + 1) % 1) * n, i = Math.floor(x), f = x - i;
+  const s = f * f * (3 - 2 * f);
+  return { a: seq[i], b: seq[Math.min(n, i + 1)], u: s };
+};
+export const burpeeGuy = (g, look, o = {}) => {
+  const A = BP[o.a ?? "stand"], B = BP[o.b ?? o.a ?? "stand"], u = o.u ?? 0;
+  const J = A.map((p, i) => [p[0] + (B[i][0] - p[0]) * u, p[1] + (B[i][1] - p[1]) * u]);
+  const [an, kn, hp, sh, el, wr, hd] = J;
+  const pants = look.pants ?? "#2a2d33", jacket = look.jacket ?? "#2f6fd6", skin = look.skin ?? "#ffe2c2", boots = look.boots ?? "#f4f1ea";
+  const far = (c) => mix(c, INK, 0.35);
+  const foot = (p, col) => { const flatK = Math.min(1, Math.max(0, (p[0] - 120) / 150)); // standing feet flat, plank feet on toes
+    g.save(); g.translate(p[0], p[1]); g.rotate(-1.1 * (1 - flatK)); ell(g, 22, 4, 36, 16, col, 6); g.restore(); };
+  // far limbs (offset back a little)
+  const off = (p, d = -14) => [p[0] + d, p[1] - 4];
+  stick(g, [off(hp), off(kn), off(an)], 30, far(pants)); foot(off(an), far(boots));
+  stick(g, [off(sh, -10), off(el, -10), off(wr, -10)], 22, far(jacket)); ell(g, wr[0] - 10, wr[1] - 4, 15, 15, far(skin), 5);
+  // torso: thick capsule hip -> shoulder
+  stick(g, [hp, sh], 74, jacket);
+  stick(g, [[hp[0], hp[1]], [hp[0] + (sh[0] - hp[0]) * 0.12, hp[1] + (sh[1] - hp[1]) * 0.12]], 70, pants);
+  // near leg + arm
+  stick(g, [hp, kn, an], 32, pants); foot(an, boots);
+  stick(g, [sh, el, wr], 24, jacket); ell(g, wr[0], wr[1], 17, 17, skin, 6);
+  // head, tilted with the torso
+  const tilt = Math.atan2(sh[0] - hp[0], hp[1] - sh[1]) * 0.45;
+  g.save(); g.translate(hd[0], hd[1]); g.rotate(tilt);
+  ell(g, 0, 0, 74, 84, skin, 8);
+  if (look.hat === "cap") {
+    g.beginPath(); g.ellipse(0, -18, 76, 70, 0, Math.PI, Math.PI * 2); g.closePath(); g.fillStyle = look.cap ?? "#e2453c"; g.fill(); g.lineWidth = 8; g.strokeStyle = INK; g.stroke();
+    rr(g, 20, -30, 80, 18, 8, shade(look.cap ?? "#e2453c", 0.8), 6);
+  } else if (look.hat === "helmet") {
+    g.beginPath(); g.ellipse(0, -20, 86, 74, 0, Math.PI, Math.PI * 2); g.closePath(); g.fillStyle = look.cap ?? "#6b7a4a"; g.fill(); g.lineWidth = 8; g.strokeStyle = INK; g.stroke();
+    rr(g, -92, -26, 184, 14, 7, shade(look.cap ?? "#6b7a4a", 0.8), 6);
+  } else {
+    g.beginPath(); g.ellipse(-6, -34, 74, 54, 0, Math.PI * 1.02, Math.PI * 1.98); g.closePath(); g.fillStyle = look.hair ?? "#2a1d18"; g.fill(); g.lineWidth = 8; g.strokeStyle = INK; g.stroke();
+  }
+  // face (profile, looking right)
+  const ex = o.expr ?? "smile", bl = o.blink ? 1 : 0;
+  ell(g, 70, 10, 12, 14, skin, 6); // nose
+  g.lineCap = "round"; g.strokeStyle = INK; g.lineWidth = 7;
+  if (bl && ex !== "dazed" && ex !== "pained") { g.beginPath(); g.moveTo(26, -6); g.lineTo(46, -6); g.stroke(); }
+  else if (ex === "shock") { ell(g, 38, -8, 14, 17, "#ffffff", 5); ell(g, 41, -6, 6, 7, INK, 0); }
+  else if (ex === "pained") { g.beginPath(); g.moveTo(26, -16); g.lineTo(44, -6); g.lineTo(26, 2); g.stroke(); }
+  else if (ex === "dazed") { g.beginPath(); for (let a = 0; a < 12; a += 0.4) { const r = a * 1.4; g.lineTo(36 + Math.cos(a + (o.t ?? 0) * 6) * r, -6 + Math.sin(a + (o.t ?? 0) * 6) * r); } g.stroke(); }
+  else ell(g, 36, -6, 7, 10, INK, 0);
+  // brow
+  g.lineWidth = 7; g.beginPath();
+  if (ex === "stern" || ex === "pained") { g.moveTo(20, -36); g.lineTo(50, -28); } else if (ex === "shock") { g.moveTo(22, -40); g.quadraticCurveTo(38, -50, 54, -40); } else { g.moveTo(22, -32); g.quadraticCurveTo(38, -38, 52, -32); }
+  g.stroke();
+  // mouth
+  g.beginPath();
+  if (ex === "shock") { ell(g, 42, 40, 12, 16, "#7a2030", 6); }
+  else if (ex === "pained") { g.moveTo(28, 44); g.lineTo(38, 36); g.lineTo(48, 44); g.lineTo(58, 36); g.stroke(); }
+  else if (ex === "dazed") { g.moveTo(28, 44); g.quadraticCurveTo(42, 34, 56, 44); g.stroke(); ell(g, 52, 54, 6, 10, "#ff9fb0", 4); }
+  else if (ex === "stern") { g.moveTo(30, 40); g.lineTo(54, 40); g.stroke(); }
+  else if (ex === "grin") { g.moveTo(22, 30); g.quadraticCurveTo(44, 62, 62, 28); g.closePath(); g.fillStyle = "#ffffff"; g.fill(); g.stroke(); }
+  else { g.moveTo(26, 34); g.quadraticCurveTo(42, 52, 58, 32); g.stroke(); }
+  g.restore();
+  if (o.sweat) sweat(g, hd[0] - 10, hd[1] + 10, o.t ?? 0);
+  return { head: hd, chest: [(hp[0] + sh[0] * 2) / 3, (hp[1] + sh[1] * 2) / 3], hand: wr };
+};
+
+/** wall whiteboard with marker lines (diegetic sign). lines = ["BURPEES", "x 100"] */
+export const board2D = (g, lines, o = {}) => {
+  rr(g, 40, 260, 520, 380, 14, "#f8f8f4", 10);
+  rr(g, 40, 620, 520, 22, 6, "#c9ccd2", 6);
+  g.textAlign = "center"; g.textBaseline = "middle";
+  lines.forEach((L, i) => { const sz = i === 0 ? 92 : 150; g.font = `bold ${sz}px Arial Black, Arial, sans-serif`;
+    g.fillStyle = i === 0 ? "#2f3d8a" : (o.col ?? "#e2453c"); g.fillText(L, 300, 350 + i * 160, 470); });
+  if (o.strike) { g.lineWidth = 16; g.strokeStyle = "#2a2d33"; g.beginPath(); g.moveTo(140, 470); g.lineTo(460, 560); g.stroke(); }
+};
+
+/** clipboard with a ticked sheet; check = 0..1 tick progress */
+export const clipboard2D = (g, x, y, s = 1, check = 0) => {
+  g.save(); g.translate(x, y); g.scale(s, s); g.rotate(-0.12);
+  rr(g, -60, -80, 120, 160, 10, "#b07a45", 6); rr(g, -48, -62, 96, 132, 4, "#ffffff", 4); rr(g, -24, -92, 48, 22, 6, "#9aa1aa", 5);
+  g.lineWidth = 5; g.strokeStyle = "#9fb3d0"; for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo(-34, -36 + i * 26); g.lineTo(30, -36 + i * 26); g.stroke(); }
+  if (check > 0) { g.lineWidth = 12; g.strokeStyle = "#2a9a50"; g.beginPath(); const k = Math.min(1, check * 2);
+    g.moveTo(-30, 10); g.lineTo(-30 + 22 * k, 10 + 24 * k); if (check > 0.5) { const k2 = (check - 0.5) * 2; g.lineTo(-8 + 50 * k2, 34 - 80 * k2); } g.stroke(); }
+  g.restore();
+};
+
+/** stopwatch; t = seconds (hand spins) */
+export const stopwatch2D = (g, x, y, s = 1, t = 0) => {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  rr(g, -12, -78, 24, 22, 5, "#c9ccd2", 5); ell(g, 0, 0, 62, 62, "#f2f2ee", 8); ell(g, 0, 0, 50, 50, null, 4);
+  g.lineWidth = 7; g.strokeStyle = "#e2453c"; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.sin(t * 6.28) * 42, -Math.cos(t * 6.28) * 42); g.stroke();
+  ell(g, 0, 0, 7, 7, INK, 0);
+  g.restore();
+};
+
+/** cartoon heart; beat = 0..1 pulse */
+export const heart2D = (g, x, y, s = 1, beat = 0) => {
+  const k = s * (1 + 0.18 * beat);
+  g.save(); g.translate(x, y); g.scale(k, k);
+  g.beginPath(); g.moveTo(0, 60); g.bezierCurveTo(-90, 0, -70, -70, 0, -30); g.bezierCurveTo(70, -70, 90, 0, 0, 60);
+  g.fillStyle = "#ff4d6d"; g.fill(); g.lineWidth = 8; g.strokeStyle = INK; g.stroke();
+  g.fillStyle = "rgba(255,255,255,.5)"; g.beginPath(); g.ellipse(-30, -22, 10, 16, -0.5, 0, Math.PI * 2); g.fill();
+  g.restore();
+};
+
+/** hot sauce bottle (no brand: a chili on the label); rot tilts it, pour = drops falling from the mouth */
+export const hotSauce2D = (g, x, y, s = 1, rot = 0) => {
+  g.save(); g.translate(x, y); g.rotate(rot); g.scale(s, s);
+  g.beginPath(); g.moveTo(-50, 120); g.lineTo(-50, -10); g.quadraticCurveTo(-50, -50, -18, -70); g.lineTo(-18, -120); g.lineTo(18, -120); g.lineTo(18, -70);
+  g.quadraticCurveTo(50, -50, 50, -10); g.lineTo(50, 120); g.closePath(); g.fillStyle = "#d8261f"; g.fill(); g.lineWidth = 8; g.strokeStyle = INK; g.stroke();
+  rr(g, -22, -150, 44, 34, 6, "#2a9a50", 6);
+  rr(g, -42, 0, 84, 80, 8, "#fff3d0", 6);
+  g.save(); g.translate(0, 40); g.rotate(-0.5); g.beginPath(); g.moveTo(-26, 0); g.quadraticCurveTo(0, -22, 26, -4); g.quadraticCurveTo(4, 24, -26, 0);
+  g.fillStyle = "#e2453c"; g.fill(); g.lineWidth = 4; g.stroke(); g.restore();
+  g.fillStyle = "rgba(255,255,255,.4)"; g.beginPath(); g.ellipse(-32, 60, 6, 40, 0, 0, Math.PI * 2); g.fill();
+  g.restore();
+};
+/** falling red drops from (x, y); n drops, t = seconds since pour */
+export const sauceDrops = (g, x, y, t, n = 1, spread = 0) => {
+  for (let i = 0; i < n; i++) { const tt = t - i * 0.07; if (tt < 0) continue; const py = y + 900 * tt * tt, px = x + Math.sin(i * 7.1) * spread;
+    if (py > 990) continue; g.beginPath(); g.moveTo(px, py - 20); g.quadraticCurveTo(px + 13, py + 6, px, py + 12); g.quadraticCurveTo(px - 13, py + 6, px, py - 20);
+    g.fillStyle = "#e0261f"; g.fill(); g.lineWidth = 4; g.strokeStyle = INK; g.stroke(); }
+};
+/** dinner plate with noodles (top-ish view); red = 0..1 sauce coverage */
+export const plate2D = (g, x, y, s = 1, red = 0) => {
+  g.save(); g.translate(x, y); g.scale(s, s);
+  ell(g, 0, 0, 170, 56, "#f4f6fa", 8); ell(g, 0, -4, 120, 38, "#e6e9ef", 4);
+  ell(g, 0, -16, 92, 34, mix("#f2cf6b", "#d8261f", red), 6);
+  g.lineWidth = 4; g.strokeStyle = mix("#c9a040", "#8a1410", red);
+  for (let i = 0; i < 5; i++) { g.beginPath(); g.arc(-50 + i * 25, -16, 18, 0.3, 2.6); g.stroke(); }
+  if (red < 0.5) { ell(g, -20, -30, 13, 11, "#a0522d", 4); ell(g, 22, -24, 13, 11, "#a0522d", 4); }
+  g.restore();
+};
+/** smoke puffs rising from (x, y), t seconds */
+export const smoke = (g, x, y, t, n = 5) => {
+  for (let i = 0; i < n; i++) { const k = (t * 0.8 + i / n) % 1, r = 22 + 40 * k;
+    g.globalAlpha = Math.min(1, (1 - k) * 1.6); ell(g, x + Math.sin(i * 2.3 + k * 4) * 40, y - k * 380, r, r * 0.85, "#6d6a72", 5); }
+  g.globalAlpha = 1;
+};

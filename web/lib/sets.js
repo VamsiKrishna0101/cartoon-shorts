@@ -316,3 +316,68 @@ export const dumbBellRig = (E, parent, x = 0, z = 0, o = {}) => {
   set(0);
   return { g, set };
 };
+
+/** 1930s city block: a row of tall brick buildings with lit windows along -z, sidewalk, street lamps. Street runs along x. */
+export const cityStreet = (E, parent, o = {}) => {
+  const g = G(parent, o.x ?? 0, 0, o.z ?? 0), r = E.prng(o.seed ?? 11);
+  const road = ground(E, g, E.PAINT.stone(), 80, 0.5, "#6f6a66"); road.position.y = 0.01;
+  E.tbox(g, 80, 0.18, 3.2, E.toon("#c9c2b6"), 0, 0, -6.4); // sidewalk
+  const bricks = ["#a8553a", "#8a6a52", "#b88a5a", "#7a4a3a", "#9a9488"];
+  let x = -34;
+  while (x < 34) {
+    const w = 4 + r() * 3, h = 9 + r() * 16, col = bricks[Math.floor(r() * bricks.length)];
+    const win = E.ctex("cityWin" + col, 256, 256, (c) => {
+      c.fillStyle = col; c.fillRect(0, 0, 256, 256);
+      c.fillStyle = "rgba(0,0,0,.18)"; for (let y = 0; y < 256; y += 16) c.fillRect(0, y, 256, 2);
+      for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) { c.fillStyle = "#2a2730"; c.fillRect(30 + i * 128, 40 + j * 128, 68, 84); c.fillStyle = (i + j) % 2 ? "#ffe39a" : "#9fc0e0"; c.fillRect(36 + i * 128, 46 + j * 128, 56, 72); }
+    });
+    E.tbox(g, w, h, 6, E.toon("#ffffff", win), x + w / 2, 0, -11, 0, 2.4);
+    E.tbox(g, w + 0.3, 0.5, 6.3, E.toon(shadeHex(col)), x + w / 2, h, -11);
+    x += w + 0.15;
+  }
+  for (let i = -3; i <= 3; i++) { // lamps
+    const lx = i * 7 + 2, lamp = G(g, lx, 0, -5.2);
+    E.cyl(lamp, 0.07, 0.1, 3.6, E.toon("#2c2a2e"), 0, 0, 0, 10);
+    E.add(lamp, new THREE.SphereGeometry(0.25, 12, 8), E.toon("#fff4c0", null, { emissive: "#c9a040" }), 0, 3.8, 0);
+  }
+  return g;
+};
+const shadeHex = (hex) => { const c = new THREE.Color(hex); c.multiplyScalar(0.7); return "#" + c.getHexString(); };
+
+/** army training ground: grass, canvas tents in a row, crates, a plain pennant pole. Opens toward +z. */
+export const armyCamp = (E, parent, o = {}) => {
+  const g = G(parent, o.x ?? 0, 0, o.z ?? 0);
+  const gr = ground(E, g, E.PAINT.grass(), 80, 0.4, "#c8d8a0"); gr.position.y = 0.012;
+  const canvas = E.toon("#a89a6a");
+  for (let i = -2; i <= 2; i++) {
+    const sh = new THREE.Shape(); sh.moveTo(-1.6, 0); sh.lineTo(1.6, 0); sh.lineTo(0, 2.2); sh.closePath();
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: 3, bevelEnabled: false }); geo.translate(0, 0, -1.5);
+    E.add(g, geo, canvas, i * 4.4, 0, -9);
+    E.tbox(g, 0.9, 1.4, 0.05, E.toon("#4a4232"), i * 4.4, 0, -7.48);
+  }
+  for (const [x, z] of [[-6, -5], [-5.2, -5.4], [6.5, -5]]) E.tbox(g, 0.8, 0.8, 0.8, E.toon("#ffffff", E.PAINT.wood()), x, 0, z);
+  E.cyl(g, 0.06, 0.08, 7, E.toon("#8d949c"), 8, 0, -7, 10);
+  const pen = new THREE.Shape(); pen.moveTo(0, 0); pen.lineTo(1.6, -0.4); pen.lineTo(0, -0.8); pen.closePath();
+  E.add(g, new THREE.ShapeGeometry(pen), E.toon("#e0b04a", null, { side: THREE.DoubleSide }), 8.06, 6.9, -7);
+  return g;
+};
+
+/** dining table with a cloth; returns { g, topY } */
+export const table = (E, parent, x = 0, z = 0, o = {}) => {
+  const g = G(parent, x, 0, z, o.ry ?? 0), W = o.w ?? 1.8, D = o.d ?? 1.0, H = 0.78, wood = E.toon("#ffffff", E.PAINT.wood());
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) E.tbox(g, 0.08, H, 0.08, wood, sx * (W / 2 - 0.1), 0, sz * (D / 2 - 0.1));
+  E.tbox(g, W, 0.06, D, wood, 0, H, 0);
+  E.tbox(g, W + 0.04, 0.02, D + 0.04, E.toon(o.cloth ?? "#f4f1ea"), 0, H + 0.06, 0);
+  return { g, topY: H + 0.08 };
+};
+
+/** lab desk with a few flasks (1930s physiology lab) */
+export const labDesk = (E, parent, x = 0, z = 0) => {
+  const t = table(E, parent, x, z, { w: 2.2, d: 0.9, cloth: "#e8ecef" });
+  const glass = E.toon("#bfe8e0", null, { emissive: "#2a5a50" });
+  for (const [dx, h, c] of [[-0.7, 0.35, "#7fd6c2"], [-0.45, 0.25, "#ff9f6b"], [0.6, 0.3, "#b7a6ff"]]) {
+    E.cyl(t.g, 0.03, 0.09, h, glass, dx, t.topY, 0, 12);
+    E.cyl(t.g, 0.085, 0.085, h * 0.4, E.toon(c), dx, t.topY, 0, 12);
+  }
+  return t;
+};
